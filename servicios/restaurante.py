@@ -1,176 +1,147 @@
-"""Módulo que contiene el servicio principal del restaurante."""
-
-from typing import List, Optional, Dict, Any
-from modelos.producto import Producto
-
+from typing import List, Optional, Set, Dict
+from modelos import Producto, Usuario, Venta
+from .archivo_servicio import ArchivoServicio
 
 class Restaurante:
-    """Servicio que administra las operaciones del restaurante."""
-    
-    def __init__(self) -> None:
-        """Inicializa el servicio con colecciones vacías."""
-        self._productos: List[Producto] = []
-    
-    def cargar_productos(self, productos: List[Producto]) -> None:
-        """
-        Carga una lista de productos reemplazando los existentes.
+    def __init__(self):
+        # Colecciones principales (listas)
+        self.productos: List[Producto] = []
+        self.usuarios: List[Usuario] = []
+        self.ventas: List[Venta] = []
         
-        Args:
-            productos: Lista de productos a cargar
-        """
-        self._productos = productos.copy()
-    
-    def obtener_productos(self) -> List[Producto]:
-        """
-        Obtiene una copia de la lista de productos.
+        # Índices auxiliares (diccionarios para búsquedas eficientes)
+        self.indice_productos: Dict[str, Producto] = {}
+        self.indice_usuarios: Dict[str, Usuario] = {}
+        self.ventas_por_usuario: Dict[str, List[Venta]] = {}
         
-        Returns:
-            Lista de productos
-        """
-        return self._productos.copy()
-    
-    def registrar_producto(self, producto: Producto) -> bool:
-        """
-        Registra un nuevo producto.
+        # Cargar datos desde JSON al iniciar
+        self._cargar_datos()
+
+    def _cargar_datos(self) -> None:
+        """Carga datos desde JSON y reconstruye índices"""
+        self.productos = ArchivoServicio.cargar_productos()
+        self.usuarios = ArchivoServicio.cargar_usuarios()
+        self.ventas = ArchivoServicio.cargar_ventas()
         
-        Args:
-            producto: Producto a registrar
-            
-        Returns:
-            True si se registró correctamente, False si ya existe
-            
-        Raises:
-            ValueError: Si el producto no es válido
-        """
-        if not isinstance(producto, Producto):
-            raise ValueError("El objeto no es un producto válido")
+        # Reconstruir índices
+        self._reconstruir_indices()
+
+    def _reconstruir_indices(self) -> None:
+        """Reconstruye todos los índices auxiliares"""
+        # Índice de productos por código
+        self.indice_productos = {p.codigo: p for p in self.productos}
         
-        # Verificar si ya existe un producto con el mismo nombre
-        if producto in self._productos:
+        # Índice de usuarios por identificación
+        self.indice_usuarios = {u.identificacion: u for u in self.usuarios}
+        
+        # Índice de ventas por usuario
+        self.ventas_por_usuario = {}
+        for venta in self.ventas:
+            if venta.identificacion_usuario not in self.ventas_por_usuario:
+                self.ventas_por_usuario[venta.identificacion_usuario] = []
+            self.ventas_por_usuario[venta.identificacion_usuario].append(venta)
+
+    def _guardar_datos(self) -> None:
+        """Guarda todos los datos en archivos JSON"""
+        ArchivoServicio.guardar_productos(self.productos)
+        ArchivoServicio.guardar_usuarios(self.usuarios)
+        ArchivoServicio.guardar_ventas(self.ventas)
+
+    # --- PRODUCTOS ---
+    def registrar_producto(self, codigo: str, nombre: str, categoria: str, precio: float, stock: int = 0) -> bool:
+        if codigo in self.indice_productos:
+            return False
+        producto = Producto(codigo, nombre, categoria, precio, stock)
+        self.productos.append(producto)
+        self.indice_productos[codigo] = producto
+        self._guardar_datos()
+        return True
+
+    def buscar_producto(self, codigo: str) -> Optional[Producto]:
+        # Búsqueda O(1) mediante índice
+        return self.indice_productos.get(codigo)
+
+    def actualizar_producto(self, codigo: str, nombre: str, categoria: str, precio: float, stock: int = None) -> bool:
+        producto = self.indice_productos.get(codigo)
+        if producto is None:
+            return False
+        producto.nombre = nombre
+        producto.categoria = categoria
+        producto.precio = precio
+        if stock is not None:
+            producto.stock = stock
+        self._guardar_datos()
+        return True
+
+    def eliminar_producto(self, codigo: str) -> bool:
+        producto = self.indice_productos.get(codigo)
+        if producto is None:
+            return False
+        self.productos.remove(producto)
+        del self.indice_productos[codigo]
+        self._guardar_datos()
+        return True
+
+    def listar_productos(self) -> List[Producto]:
+        return self.productos
+
+    def obtener_categorias_unicas(self) -> Set[str]:
+        # Uso de set para obtener categorías únicas
+        return {p.categoria for p in self.productos}
+
+    # --- USUARIOS ---
+    def registrar_usuario(self, identificacion: str, nombre: str, correo: str) -> bool:
+        if identificacion in self.indice_usuarios:
+            return False
+        usuario = Usuario(identificacion, nombre, correo)
+        self.usuarios.append(usuario)
+        self.indice_usuarios[identificacion] = usuario
+        self._guardar_datos()
+        return True
+
+    def buscar_usuario(self, identificacion: str) -> Optional[Usuario]:
+        # Búsqueda O(1) mediante índice
+        return self.indice_usuarios.get(identificacion)
+
+    def listar_usuarios(self) -> List[Usuario]:
+        return self.usuarios
+
+    # --- VENTAS ---
+    def registrar_venta(self, codigo_venta: str, identificacion_usuario: str, items: List[Dict]) -> bool:
+        # Validar que el usuario existe
+        if identificacion_usuario not in self.indice_usuarios:
             return False
         
-        self._productos.append(producto)
+        # Validar stock y calcular total
+        total = 0.0
+        for item in items:
+            producto = self.indice_productos.get(item["codigo_producto"])
+            if producto is None:
+                return False
+            if producto.stock < item["cantidad"]:
+                return False
+            total += producto.precio * item["cantidad"]
+        
+        # Actualizar stock
+        for item in items:
+            producto = self.indice_productos[item["codigo_producto"]]
+            producto.stock -= item["cantidad"]
+        
+        # Crear y registrar venta
+        venta = Venta(codigo_venta, identificacion_usuario, items, total)
+        self.ventas.append(venta)
+        
+        # Actualizar índice de ventas por usuario
+        if identificacion_usuario not in self.ventas_por_usuario:
+            self.ventas_por_usuario[identificacion_usuario] = []
+        self.ventas_por_usuario[identificacion_usuario].append(venta)
+        
+        self._guardar_datos()
         return True
-    
-    def buscar_producto(self, nombre: str) -> Optional[Producto]:
-        """
-        Busca un producto por nombre.
-        
-        Args:
-            nombre: Nombre del producto a buscar
-            
-        Returns:
-            Producto encontrado o None
-        """
-        nombre = nombre.strip().lower()
-        for producto in self._productos:
-            if producto.nombre.lower() == nombre:
-                return producto
-        return None
-    
-    def buscar_productos_por_categoria(self, categoria: str) -> List[Producto]:
-        """
-        Busca productos por categoría.
-        
-        Args:
-            categoria: Categoría a buscar
-            
-        Returns:
-            Lista de productos de esa categoría
-        """
-        categoria = categoria.strip().lower()
-        return [
-            p for p in self._productos
-            if p.categoria.lower() == categoria
-        ]
-    
-    def actualizar_producto(
-        self,
-        nombre_actual: str,
-        nuevo_nombre: Optional[str] = None,
-        nuevo_precio: Optional[float] = None,
-        nueva_categoria: Optional[str] = None,
-        nueva_descripcion: Optional[str] = None
-    ) -> bool:
-        """
-        Actualiza un producto existente.
-        
-        Args:
-            nombre_actual: Nombre actual del producto
-            nuevo_nombre: Nuevo nombre (opcional)
-            nuevo_precio: Nuevo precio (opcional)
-            nueva_categoria: Nueva categoría (opcional)
-            nueva_descripcion: Nueva descripción (opcional)
-            
-        Returns:
-            True si se actualizó correctamente, False si no existe
-            
-        Raises:
-            ValueError: Si los nuevos valores no son válidos
-        """
-        producto = self.buscar_producto(nombre_actual)
-        if not producto:
-            return False
-        
-        # Si se cambia el nombre, verificar que no exista otro
-        if nuevo_nombre is not None:
-            nuevo_nombre = nuevo_nombre.strip()
-            if nuevo_nombre:
-                # Verificar que no exista otro producto con el nuevo nombre
-                for p in self._productos:
-                    if p.nombre.lower() == nuevo_nombre.lower() and p != producto:
-                        raise ValueError(f"Ya existe un producto con el nombre '{nuevo_nombre}'")
-                
-                # Actualizar el nombre
-                setattr(producto, '_nombre', producto._validar_nombre(nuevo_nombre))
-        
-        if nuevo_precio is not None:
-            setattr(producto, '_precio', producto._validar_precio(nuevo_precio))
-        
-        if nueva_categoria is not None:
-            setattr(producto, '_categoria', producto._validar_categoria(nueva_categoria))
-        
-        if nueva_descripcion is not None:
-            if nueva_descripcion == "":
-                producto.descripcion = None
-            else:
-                producto.descripcion = nueva_descripcion.strip()
-        
-        return True
-    
-    def eliminar_producto(self, nombre: str) -> bool:
-        """
-        Elimina un producto por nombre.
-        
-        Args:
-            nombre: Nombre del producto a eliminar
-            
-        Returns:
-            True si se eliminó, False si no existe
-        """
-        producto = self.buscar_producto(nombre)
-        if not producto:
-            return False
-        
-        self._productos.remove(producto)
-        return True
-    
-    def listar_productos(self) -> str:
-        """
-        Obtiene un listado formateado de todos los productos.
-        
-        Returns:
-            String con el listado de productos
-        """
-        if not self._productos:
-            return "No hay productos registrados."
-        
-        resultado = "=" * 50 + "\n"
-        resultado += "LISTA DE PRODUCTOS\n"
-        resultado += "=" * 50 + "\n"
-        
-        for i, producto in enumerate(self._productos, 1):
-            resultado += f"{i}. {producto}\n"
-        
-        resultado += "=" * 50 + f"\nTotal: {len(self._productos)} productos"
-        return resultado
+
+    def consultar_ventas_por_usuario(self, identificacion_usuario: str) -> List[Venta]:
+        # Consulta O(1) mediante índice de ventas por usuario
+        return self.ventas_por_usuario.get(identificacion_usuario, [])
+
+    def listar_ventas(self) -> List[Venta]:
+        return self.ventas
