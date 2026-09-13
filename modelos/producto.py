@@ -1,5 +1,3 @@
-from typing import Union
-
 class Producto:
     def __init__(self, codigo: str, nombre: str, categoria: str, precio: float, stock: int = 0):
         self.codigo = codigo

@@ -1,0 +1,14 @@
+[
+  {
+    "identificacion": "admin",
+    "nombre": "Administrador",
+    "correo": "adminrestaurante@gmail.com",
+    "contrasena": "1234"
+  },
+  {
+    "identificacion": "mesero1",
+    "nombre": "JuanPérez",
+    "correo": "juanrestaurante@gmail.com",
+    "contrasena": "1234"
+  }
+]

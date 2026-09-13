@@ -1,2 +1,2 @@
-from .restaurante import Restaurante
+from .restaurante_servicio import RestauranteServicio
 from .archivo_servicio import ArchivoServicio
