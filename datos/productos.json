@@ -1,23 +1,23 @@
 [
   {
     "codigo": "P001",
-    "nombre": "Hamburguesa ",
+    "nombre": "Hamburguesa",
     "categoria": "comida",
-    "precio": 5.50,
+    "precio": 5.5,
     "stock": 20
   },
   {
     "codigo": "P002",
     "nombre": "Pizza de peperoni",
     "categoria": "comida",
-    "precio": 7.00,
+    "precio": 7.0,
     "stock": 15
   },
   {
     "codigo": "P003",
     "nombre": "Coca-Cola 500ml",
     "categoria": "bebida",
-    "precio": 1.50,
+    "precio": 1.5,
     "stock": 50
   }
 ]

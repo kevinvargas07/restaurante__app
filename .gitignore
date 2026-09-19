@@ -1,8 +1,1 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.vscode/
-.idea/
-.DS_Store
-*.log
+__pycache__/n*.pycn*.pyon*.pydn.vscode/n.idea/n.DS_Storen*.logn
