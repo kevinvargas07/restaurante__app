@@ -19,5 +19,12 @@
     "categoria": "bebida",
     "precio": 1.5,
     "stock": 50
+  },
+  {
+    "codigo": "P004",
+    "nombre": "Gelatina",
+    "categoria": "postre",
+    "precio": 0.75,
+    "stock": 20
   }
 ]

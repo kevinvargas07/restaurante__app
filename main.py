@@ -11,7 +11,7 @@ class AplicacionRestaurante:
     
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Restaurante App - Semana 14")
+        self.root.title("Restaurante App - Semana 15")   # ← ESTA LÍNEA DEBE ESTAR DENTRO
         self.root.geometry("900x650")
         self.root.minsize(800, 600)
         
