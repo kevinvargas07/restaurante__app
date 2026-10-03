@@ -240,31 +240,155 @@ class MainView:
         
         self.label_estado.config(text=f"Total: {len(productos)} productos")
     
-    # ========== TAB USUARIOS ==========
+        # ========== TAB USUARIOS (Semana 16) ==========
     def _construir_tab_usuarios(self) -> None:
-        """Construye la pestaña de usuarios."""
+        """Construye la pestaña de usuarios con formulario y tabla."""
+        # Contenedor superior: formulario + acciones
+        frame_superior = ttk.Frame(self.tab_usuarios)
+        frame_superior.pack(fill="x", padx=10, pady=10)
+        
+        # --- Formulario de usuario ---
+        self._construir_formulario_usuario(frame_superior)
+        
+        # --- Panel de acciones ---
+        self._construir_panel_acciones_usuario(frame_superior)
+        
+        # --- Tabla de usuarios ---
+        self._construir_tabla_usuarios()
+    
+    def _construir_formulario_usuario(self, padre: ttk.Frame) -> None:
+        """Construye el formulario de usuarios."""
+        frame_form = ttk.LabelFrame(
+            padre,
+            text="Datos del Usuario",
+            padding=15
+        )
+        frame_form.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        
+        # Identificación
+        ttk.Label(frame_form, text="Identificación:").grid(
+            row=0, column=0, sticky="w", pady=5, padx=5
+        )
+        self.entry_identificacion = ttk.Entry(frame_form, width=30)
+        self.entry_identificacion.grid(row=0, column=1, pady=5, padx=5, sticky="ew")
+        
+        # Nombre
+        ttk.Label(frame_form, text="Nombre:").grid(
+            row=1, column=0, sticky="w", pady=5, padx=5
+        )
+        self.entry_nombre_usuario = ttk.Entry(frame_form, width=30)
+        self.entry_nombre_usuario.grid(row=1, column=1, pady=5, padx=5, sticky="ew")
+        
+        # Correo
+        ttk.Label(frame_form, text="Correo:").grid(
+            row=2, column=0, sticky="w", pady=5, padx=5
+        )
+        self.entry_correo = ttk.Entry(frame_form, width=30)
+        self.entry_correo.grid(row=2, column=1, pady=5, padx=5, sticky="ew")
+        
+        # Contraseña
+        ttk.Label(frame_form, text="Contraseña:").grid(
+            row=3, column=0, sticky="w", pady=5, padx=5
+        )
+        self.entry_contrasena_usuario = ttk.Entry(frame_form, width=30, show="*")
+        self.entry_contrasena_usuario.grid(row=3, column=1, pady=5, padx=5, sticky="ew")
+        self.entry_contrasena_usuario.insert(0, "1234")
+        
+        # Rol
+        ttk.Label(frame_form, text="Rol:").grid(
+            row=4, column=0, sticky="w", pady=5, padx=5
+        )
+        self.combo_rol = ttk.Combobox(
+            frame_form,
+            values=["Administrador", "Empleado", "Cliente"],
+            width=28,
+            state="readonly"
+        )
+        self.combo_rol.grid(row=4, column=1, pady=5, padx=5, sticky="ew")
+        self.combo_rol.current(2)  # Cliente por defecto
+        
+        # Etiqueta informativa del rol
+        self.label_info_rol = ttk.Label(
+            frame_form,
+            text="Rol seleccionado: Cliente",
+            font=("Arial", 9, "italic"),
+            foreground="gray"
+        )
+        self.label_info_rol.grid(row=5, column=0, columnspan=2, pady=(5, 0))
+        
+        frame_form.columnconfigure(1, weight=1)
+        
+        # ========== EVENTOS ==========
+        # <Return> en cualquier campo del formulario → registrar
+        self.entry_identificacion.bind("<Return>", self._on_return_usuario)
+        self.entry_nombre_usuario.bind("<Return>", self._on_return_usuario)
+        self.entry_correo.bind("<Return>", self._on_return_usuario)
+        self.entry_contrasena_usuario.bind("<Return>", self._on_return_usuario)
+        
+        # <Escape> → limpiar formulario
+        self.entry_identificacion.bind("<Escape>", self._on_escape_usuario)
+        self.entry_nombre_usuario.bind("<Escape>", self._on_escape_usuario)
+        self.entry_correo.bind("<Escape>", self._on_escape_usuario)
+        self.entry_contrasena_usuario.bind("<Escape>", self._on_escape_usuario)
+        
+        # <<ComboboxSelected>> → actualizar etiqueta informativa
+        self.combo_rol.bind("<<ComboboxSelected>>", self._on_rol_seleccionado)
+    
+    def _construir_panel_acciones_usuario(self, padre: ttk.Frame) -> None:
+        """Construye el panel de botones de acción para usuarios."""
+        frame_acciones = ttk.LabelFrame(padre, text="Acciones", padding=15)
+        frame_acciones.pack(side="right", fill="y")
+        
+        botones = [
+            ("➕ Registrar", self._registrar_usuario),
+            ("✏️ Actualizar", self._actualizar_usuario),
+            ("🗑️ Eliminar", self._eliminar_usuario),
+            ("🧹 Limpiar", self._limpiar_formulario_usuario),
+        ]
+        
+        for texto, comando in botones:
+            ttk.Button(
+                frame_acciones,
+                text=texto,
+                command=comando,
+                width=18
+            ).pack(pady=4, fill="x")
+        
+        # Nota informativa
+        ttk.Label(
+            frame_acciones,
+            text="Enter: registrar\nEsc: limpiar",
+            font=("Arial", 8, "italic"),
+            foreground="gray",
+            justify="center"
+        ).pack(pady=(10, 0))
+    
+    def _construir_tabla_usuarios(self) -> None:
+        """Construye la tabla de usuarios."""
         frame_tabla = ttk.LabelFrame(
             self.tab_usuarios,
             text="Usuarios Registrados",
             padding=10
         )
-        frame_tabla.pack(fill="both", expand=True, padx=10, pady=10)
+        frame_tabla.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
-        columnas = ("identificacion", "nombre", "correo")
+        columnas = ("identificacion", "nombre", "correo", "rol")
         self.tabla_usuarios = ttk.Treeview(
             frame_tabla,
             columns=columnas,
             show="headings",
-            height=15
+            height=10
         )
         
         self.tabla_usuarios.heading("identificacion", text="Identificación")
         self.tabla_usuarios.heading("nombre", text="Nombre")
         self.tabla_usuarios.heading("correo", text="Correo")
+        self.tabla_usuarios.heading("rol", text="Rol")
         
-        self.tabla_usuarios.column("identificacion", width=150, anchor="center")
-        self.tabla_usuarios.column("nombre", width=200)
-        self.tabla_usuarios.column("correo", width=250)
+        self.tabla_usuarios.column("identificacion", width=130, anchor="center")
+        self.tabla_usuarios.column("nombre", width=180)
+        self.tabla_usuarios.column("correo", width=230)
+        self.tabla_usuarios.column("rol", width=120, anchor="center")
         
         scrollbar = ttk.Scrollbar(
             frame_tabla,
@@ -275,18 +399,225 @@ class MainView:
         
         self.tabla_usuarios.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Etiqueta de estado
+        self.label_estado_usuarios = ttk.Label(
+            self.tab_usuarios,
+            text="",
+            font=("Arial", 9, "italic"),
+            foreground="gray"
+        )
+        self.label_estado_usuarios.pack(pady=(0, 5))
+        
+        # ========== EVENTO: <<TreeviewSelect>> ==========
+        self.tabla_usuarios.bind("<<TreeviewSelect>>", self._on_usuario_seleccionado)
     
     def _cargar_tabla_usuarios(self) -> None:
-        """Carga la tabla de usuarios."""
+        """Carga/recarga la tabla de usuarios."""
         for item in self.tabla_usuarios.get_children():
             self.tabla_usuarios.delete(item)
         
-        for usuario in self.servicio.listar_usuarios():
+        usuarios = self.servicio.listar_usuarios()
+        for usuario in usuarios:
             self.tabla_usuarios.insert("", "end", values=(
                 usuario.identificacion,
                 usuario.nombre,
-                usuario.correo
+                usuario.correo,
+                usuario.rol
             ))
+        
+        self.label_estado_usuarios.config(
+            text=f"Total: {len(usuarios)} usuarios registrados"
+        )
+    
+    # ========== CALLBACKS DE EVENTOS (USUARIOS) ==========
+    def _on_usuario_seleccionado(self, event=None) -> None:
+        """Callback para <<TreeviewSelect>>: carga los datos del usuario."""
+        seleccion = self.tabla_usuarios.selection()
+        if not seleccion:
+            return
+        
+        # Obtener la identificación de la fila seleccionada
+        item = self.tabla_usuarios.item(seleccion[0])
+        valores = item.get("values", [])
+        if not valores:
+            return
+        
+        identificacion = valores[0]
+        
+        # Buscar el objeto Usuario mediante el servicio
+        usuario = self.servicio.buscar_usuario(identificacion)
+        if usuario is None:
+            return
+        
+        # Cargar los datos en el formulario
+        self.entry_identificacion.delete(0, "end")
+        self.entry_identificacion.insert(0, usuario.identificacion)
+        self.entry_identificacion.config(state="readonly")
+        
+        self.entry_nombre_usuario.delete(0, "end")
+        self.entry_nombre_usuario.insert(0, usuario.nombre)
+        
+        self.entry_correo.delete(0, "end")
+        self.entry_correo.insert(0, usuario.correo)
+        
+        self.entry_contrasena_usuario.delete(0, "end")
+        self.entry_contrasena_usuario.insert(0, usuario.contrasena)
+        
+        self.combo_rol.set(usuario.rol)
+        self.label_info_rol.config(text=f"Rol seleccionado: {usuario.rol}")
+    
+    def _on_return_usuario(self, event=None) -> None:
+        """Callback para <Return>: registra un usuario reutilizando el método."""
+        # Reutilizar el método existente (NO duplicar lógica)
+        self._registrar_usuario()
+    
+    def _on_escape_usuario(self, event=None) -> None:
+        """Callback para <Escape>: limpia el formulario y la selección."""
+        self._limpiar_formulario_usuario()
+    
+    def _on_rol_seleccionado(self, event=None) -> None:
+        """Callback para <<ComboboxSelected>>: actualiza la etiqueta del rol."""
+        rol = self.combo_rol.get()
+        self.label_info_rol.config(text=f"Rol seleccionado: {rol}")
+    
+    # ========== CRUD USUARIOS ==========
+    def _obtener_datos_formulario_usuario(self) -> Optional[dict]:
+        """Obtiene y valida los datos del formulario de usuarios."""
+        identificacion = self.entry_identificacion.get().strip()
+        nombre = self.entry_nombre_usuario.get().strip()
+        correo = self.entry_correo.get().strip()
+        contrasena = self.entry_contrasena_usuario.get().strip()
+        rol = self.combo_rol.get().strip()
+        
+        if not all([identificacion, nombre, correo, contrasena, rol]):
+            messagebox.showwarning(
+                "Campos vacíos",
+                "Todos los campos son obligatorios."
+            )
+            return None
+        
+        return {
+            "identificacion": identificacion,
+            "nombre": nombre,
+            "correo": correo,
+            "contrasena": contrasena,
+            "rol": rol
+        }
+    
+    def _registrar_usuario(self) -> None:
+        """Registra un usuario usando el servicio."""
+        datos = self._obtener_datos_formulario_usuario()
+        if datos is None:
+            return
+        
+        try:
+            exito = self.servicio.registrar_usuario(**datos)
+            if exito:
+                messagebox.showinfo(
+                    "Éxito",
+                    f"Usuario '{datos['identificacion']}' registrado correctamente."
+                )
+                self._cargar_tabla_usuarios()
+                self._limpiar_formulario_usuario()
+            else:
+                messagebox.showwarning(
+                    "Duplicado",
+                    f"Ya existe un usuario con identificación '{datos['identificacion']}'."
+                )
+        except ValueError as error:
+            messagebox.showerror("Error de validación", str(error))
+    
+    def _actualizar_usuario(self) -> None:
+        """Actualiza un usuario usando el servicio."""
+        datos = self._obtener_datos_formulario_usuario()
+        if datos is None:
+            return
+        
+        # Proteger la cuenta del administrador autenticado
+        if datos["identificacion"] == self.usuario.identificacion:
+            if not messagebox.askyesno(
+                "Modificar cuenta propia",
+                "Está a punto de modificar su propia cuenta. ¿Continuar?"
+            ):
+                return
+        
+        try:
+            exito = self.servicio.actualizar_usuario(**datos)
+            if exito:
+                messagebox.showinfo(
+                    "Éxito",
+                    f"Usuario '{datos['identificacion']}' actualizado correctamente."
+                )
+                self._cargar_tabla_usuarios()
+                self._limpiar_formulario_usuario()
+            else:
+                messagebox.showwarning(
+                    "No encontrado",
+                    f"No existe un usuario con identificación '{datos['identificacion']}'."
+                )
+        except ValueError as error:
+            messagebox.showerror("Error de validación", str(error))
+    
+    def _eliminar_usuario(self) -> None:
+        """Elimina un usuario usando el servicio."""
+        identificacion = self.entry_identificacion.get().strip()
+        if not identificacion:
+            messagebox.showwarning(
+                "Campo vacío",
+                "Seleccione un usuario de la tabla para eliminar."
+            )
+            return
+        
+        # Proteger la cuenta del administrador autenticado
+        if identificacion == self.usuario.identificacion:
+            messagebox.showerror(
+                "Operación no permitida",
+                "No puede eliminar su propia cuenta mientras está conectado."
+            )
+            return
+        
+        usuario = self.servicio.buscar_usuario(identificacion)
+        if usuario is None:
+            messagebox.showinfo(
+                "No encontrado",
+                f"No existe un usuario con identificación '{identificacion}'."
+            )
+            return
+        
+        confirmar = messagebox.askyesno(
+            "Confirmar eliminación",
+            f"¿Eliminar el usuario '{usuario.nombre}' ({usuario.identificacion})?"
+        )
+        if not confirmar:
+            return
+        
+        if self.servicio.eliminar_usuario(identificacion):
+            messagebox.showinfo(
+                "Éxito",
+                f"Usuario '{identificacion}' eliminado correctamente."
+            )
+            self._cargar_tabla_usuarios()
+            self._limpiar_formulario_usuario()
+    
+    def _limpiar_formulario_usuario(self) -> None:
+        """Limpia el formulario y la selección del Treeview."""
+        # Habilitar el campo identificación (puede estar readonly)
+        self.entry_identificacion.config(state="normal")
+        
+        self.entry_identificacion.delete(0, "end")
+        self.entry_nombre_usuario.delete(0, "end")
+        self.entry_correo.delete(0, "end")
+        self.entry_contrasena_usuario.delete(0, "end")
+        self.entry_contrasena_usuario.insert(0, "1234")
+        self.combo_rol.current(2)  # Cliente
+        self.label_info_rol.config(text="Rol seleccionado: Cliente")
+        
+        # Limpiar selección del Treeview
+        for item in self.tabla_usuarios.selection():
+            self.tabla_usuarios.selection_remove(item)
+        
+        self.entry_identificacion.focus_set()
     
     # ========== TAB VENTAS ==========
     def _construir_tab_ventas(self) -> None:

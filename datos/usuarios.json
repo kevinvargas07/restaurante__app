@@ -3,12 +3,14 @@
     "identificacion": "admin",
     "nombre": "Administrador",
     "correo": "adminrestaurante@gmail.com",
-    "contrasena": "1234"
+    "contrasena": "1234",
+    "rol": "Administrador"
   },
   {
     "identificacion": "mesero1",
-    "nombre": "JuanPérez",
+    "nombre": "Juan Perez",
     "correo": "juanrestaurante@gmail.com",
-    "contrasena": "1234"
+    "contrasena": "1234",
+    "rol": "Empleado"
   }
 ]
